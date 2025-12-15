@@ -1,0 +1,15 @@
+# Ignore storage content but keep directory structure
+storage/rawdata/*
+storage/bindata/*
+storage/outputdata/*
+
+# Keep the directories themselves
+!storage/rawdata/.gitkeep
+!storage/bindata/.gitkeep
+!storage/outputdata/.gitkeep
+
+# Maven build artifacts
+backend/api/target/
+
+# Test datasets
+test-dataset.nt

@@ -45,7 +45,7 @@ CPP_DEPS += \
 src/%.o: ../src/%.cpp
 	@echo 'Building file: $<'
 	@echo 'Invoking: GCC C++ Compiler'
-	g++ -g -O0 -I/usr/local/include -I/home/harbir/sparsehash/include -O3 -Wall -c -fmessage-length=0 \
+	g++ -std=c++20 -g -O0 -I/usr/local/include -I/home/harbir/sparsehash/include -O3 -Wall -c -fmessage-length=0 \
 	-MMD -MP -MF"$(@:%.o=%.d)" -MT"$(@:%.o=%.d)" -o "$@" "$<"
 	@echo 'Finished building: $<'
 	@echo ' '

@@ -34,8 +34,15 @@ RUN git clone https://github.com/facebook/rocksdb.git && \
 # Set the LD_LIBRARY_PATH environment variable
 ENV LD_LIBRARY_PATH=/usr/local/lib:$LD_LIBRARY_PATH
 
-# The source code will be mounted into /app at runtime
-# No need to COPY or build the application here
+# Copy the NewFastEncoder source code
+COPY NewFastEncoder /app/NewFastEncoder
 
-# Set the default command to bash
-CMD ["/bin/bash"]
+# Build the application
+WORKDIR /app/NewFastEncoder/Release
+RUN make clean && make
+
+# Set default working directory back to /app
+WORKDIR /app
+
+# Default entrypoint to run the fragmentation
+ENTRYPOINT ["/app/NewFastEncoder/Release/NewFastEncoder"]
