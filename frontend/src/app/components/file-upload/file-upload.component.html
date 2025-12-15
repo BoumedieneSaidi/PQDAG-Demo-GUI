@@ -1,0 +1,75 @@
+<div class="upload-container">
+  <h2>Upload RDF Files</h2>
+  
+  <!-- Drag & Drop Zone -->
+  <div 
+    class="drop-zone"
+    [class.dragging]="isDragging"
+    (dragover)="onDragOver($event)"
+    (dragleave)="onDragLeave($event)"
+    (drop)="onDrop($event)">
+    
+    <div class="drop-zone-content">
+      <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+        <polyline points="17 8 12 3 7 8"></polyline>
+        <line x1="12" y1="3" x2="12" y2="15"></line>
+      </svg>
+      <h3>Drag & Drop RDF files here</h3>
+      <p>or</p>
+      <label for="file-input" class="btn-select">
+        Browse Files
+        <input 
+          type="file" 
+          id="file-input" 
+          multiple 
+          accept=".nt,.ttl"
+          (change)="onFileSelected($event)"
+          hidden>
+      </label>
+      <p class="file-types">Supported: .nt, .ttl</p>
+    </div>
+  </div>
+
+  <!-- Error Message -->
+  <div class="error-message" *ngIf="errorMessage">
+    {{ errorMessage }}
+  </div>
+
+  <!-- Selected Files List -->
+  <div class="selected-files" *ngIf="selectedFiles.length > 0">
+    <h3>Selected Files ({{ selectedFiles.length }})</h3>
+    <div class="file-list">
+      <div class="file-item" *ngFor="let file of selectedFiles; let i = index">
+        <div class="file-info">
+          <span class="file-name">{{ file.name }}</span>
+          <span class="file-size">{{ formatFileSize(file.size) }}</span>
+        </div>
+        <button class="btn-remove" (click)="removeFile(i)">×</button>
+      </div>
+    </div>
+    
+    <div class="actions">
+      <button class="btn btn-secondary" (click)="clearAll()" [disabled]="uploadProgress">
+        Clear All
+      </button>
+      <button class="btn btn-primary" (click)="uploadFiles()" [disabled]="uploadProgress">
+        {{ uploadProgress ? 'Uploading...' : 'Upload Files' }}
+      </button>
+    </div>
+  </div>
+
+  <!-- Upload Result -->
+  <div class="upload-result success" *ngIf="uploadResult?.success">
+    <h3>✓ Upload Successful</h3>
+    <p>{{ uploadResult.message }}</p>
+    <div class="result-details">
+      <div class="detail-item">
+        <strong>Files:</strong> {{ uploadResult.fileCount }}
+      </div>
+      <div class="detail-item">
+        <strong>Total Size:</strong> {{ formatFileSize(uploadResult.totalSize) }}
+      </div>
+    </div>
+  </div>
+</div>

@@ -5,16 +5,19 @@
 - **Purpose**: Graphical User Interface for PQDAG (a distributed RDF database system)
 - **Repository**: https://github.com/BoumedieneSaidi/PQDAG-Demo-GUI.git
 - **Owner**: BoumedieneSaidi
-- **Current Branch**: main
+- **Main Branch**: main
+- **Current Feature Branch**: feature/angular-frontend
 
 ## About PQDAG
-PQDAG is a distributed RDF database system.
+PQDAG is a distributed RDF database system for managing and querying large-scale RDF data through fragmentation and distribution.
 
 ## Current Status
 - ✅ Repository created on GitHub (Dec 15, 2025)
-- ✅ Local repository initialized
-- ✅ Initial commit created
-- ✅ Pushed to GitHub successfully
+- ✅ Backend API implemented with Spring Boot (merged to develop)
+- ✅ Docker integration for fragmentation engine
+- ✅ Angular frontend with drag & drop upload and metrics dashboard
+- ✅ Full workflow tested and working
+- ⏳ Frontend branch ready for merge
 
 ## Git Setup Commands Used
 ```bash
@@ -30,18 +33,42 @@ git push -u origin main
 
 ### PQDAG System Overview
 PQDAG has **3 main steps**:
-1. **Fragmentation** - Creates fragments from RDF data
-2. **Allocation** - Distributes fragments to different machines
-3. **Core** - Handles query execution
+1. **Fragmentation** ✅ - Creates fragments from RDF data (IMPLEMENTED)
+2. **Allocation** - Distributes fragments to different machines (to be added)
+3. **Core** - Handles query execution (to be added)
 
 ### Repository Structure
 ```
 PQDAG-Demo-GUI/
 ├── backend/
-│   ├── fragmentation/       # Step 1: RDF Fragmentation
-│   ├── allocation/          # Step 2: Fragment Distribution (to be added)
-│   └── core/                # Step 3: Query Execution (to be added)
-├── frontend/                # GUI application (to be created)
+│   ├── api/                      # Spring Boot REST API
+│   │   ├── src/main/java/com/pqdag/
+│   │   │   ├── controller/       # REST controllers
+│   │   │   ├── service/          # Business logic
+│   │   │   ├── model/            # Data models
+│   │   │   └── config/           # Configuration
+│   │   ├── pom.xml
+│   │   └── Dockerfile
+│   └── fragmentation/            # NewFastEncoder C++ fragmentation engine
+│       ├── NewFastEncoder/       # C++ source code
+│       ├── Dockerfile
+│       └── README.md
+├── frontend/                     # Angular application
+│   ├── src/
+│   │   ├── app/
+│   │   │   ├── components/       # UI components
+│   │   │   │   ├── file-upload/
+│   │   │   │   └── fragmentation-results/
+│   │   │   ├── services/         # HTTP services
+│   │   │   ├── models/           # TypeScript interfaces
+│   │   │   └── config/           # API configuration
+│   │   └── styles.scss
+│   ├── angular.json
+│   └── package.json
+├── storage/                      # Data directories
+│   ├── rawdata/                  # Uploaded RDF files
+│   ├── bindata/                  # Temporary intermediate files
+│   └── outputdata/               # Final fragment files
 ├── README.md
 └── CONTEXT.md
 ```
@@ -323,32 +350,326 @@ storage/                    # Excluded from Git (.gitignore)
 
 ## Next Steps
 
-### Immediate Tasks
-- ✅ Update CONTEXT.md with test results (Done)
-- ⏳ Commit changes to Git
-  - Modified: Dockerfile, Makefiles (C++20 fixes)
-  - Branch: feature/backend-setup
-  - Message: "Fix C++20 compatibility and optimize Docker build for fragmentation"
+### Completed Features ✅
+- ✅ Spring Boot REST API with all endpoints
+- ✅ Docker integration with user mapping (no permission issues)
+- ✅ Metrics parsing from Docker output
+- ✅ File upload with validation (.nt, .ttl)
+- ✅ Automatic cleanup (rawdata + bindata)
+- ✅ Angular frontend with drag & drop
+- ✅ Real-time metrics dashboard
+- ✅ Full workflow tested and working
 
-### Phase 2: Allocation Step
-- Understand how fragments are distributed to machines
-- Required configuration (machine list, IPs, network)
-- Allocation algorithm (file copy, network transfer, logical mapping)
-- Integration with fragmentation output
-- Docker setup for allocation step
+### Ready for Deployment
+- ✅ Backend on branch `develop` (merged)
+- ✅ Frontend on branch `feature/angular-frontend` (ready to merge)
+- ⏳ Update documentation
+- ⏳ Merge frontend to develop
+- ⏳ Create deployment guide
 
-### Phase 3: Core/Query Step
-- Query execution engine
-- SPARQL query handling
-- Distributed query processing across fragments
-- Result aggregation
-
-### Phase 4: GUI Development
-- Technology stack selection (web/desktop)
-- Features for each step (fragmentation, allocation, core)
-- Monitoring and logging interface
-- Configuration management UI
-- Execution control and status display
+### Future Enhancements
+- [ ] WebSocket integration for live Docker logs
+- [ ] Phase 2: Allocation Step
+- [ ] Phase 3: Core/Query Step
+- [ ] Docker Compose for full stack deployment
+- [ ] Production optimization (nginx, SSL, etc.)
 
 ## Current Phase
-✅ **Fragmentation Testing Complete** - Ready to understand Allocation step (Step 2/3).
+✅ **Fragmentation GUI Complete** - Full workflow tested successfully with Angular frontend and Spring Boot backend.
+
+## Backend API (Spring Boot)
+
+### Technology Stack
+- **Framework**: Spring Boot 3.2.1
+- **Language**: Java 17
+- **Build Tool**: Maven
+- **Dependencies**:
+  - Spring Web (REST API)
+  - Spring WebSocket (for future live logs)
+  - Spring DevTools
+  - Lombok (reduce boilerplate)
+  
+### Configuration
+- **Port**: 8080
+- **CORS**: Enabled for `http://localhost:4200` (Angular dev server)
+- **File Upload**: Max size 1GB
+- **Storage Paths**:
+  - rawdata: `../../storage/rawdata`
+  - bindata: `../../storage/bindata`
+  - outputdata: `../../storage/outputdata`
+
+### REST Endpoints
+
+#### 1. Health Check
+```http
+GET /api/health
+```
+**Response**:
+```json
+{
+  "status": "UP",
+  "service": "PQDAG API",
+  "timestamp": 1734298765000
+}
+```
+
+#### 2. File Upload
+```http
+POST /api/files/upload
+Content-Type: multipart/form-data
+```
+**Parameters**:
+- `files`: MultipartFile[] (one or more .nt or .ttl files)
+
+**Response**:
+```json
+{
+  "success": true,
+  "message": "2 file(s) uploaded successfully",
+  "uploadedFiles": ["dataset1.nt", "dataset2.nt"]
+}
+```
+
+#### 3. List Files
+```http
+GET /api/files/list
+```
+**Response**:
+```json
+{
+  "files": ["dataset1.nt", "dataset2.nt"],
+  "totalSize": 15728640,
+  "count": 2
+}
+```
+
+#### 4. Clear Files
+```http
+DELETE /api/files/clear
+```
+**Response**:
+```json
+{
+  "success": true,
+  "message": "All files cleared successfully"
+}
+```
+
+#### 5. Start Fragmentation
+```http
+POST /api/fragmentation/start
+Content-Type: application/json
+```
+**Request Body**:
+```json
+{
+  "cleanAfter": true
+}
+```
+
+**Response**:
+```json
+{
+  "success": true,
+  "message": "Fragmentation completed successfully",
+  "fragmentCount": 918,
+  "totalTriples": 110828,
+  "executionTimeSeconds": 1.522,
+  "throughput": 72787,
+  "encodingTime": 0.120111,
+  "dictionariesTime": 0.00635933,
+  "sortingTime": 0.0997743,
+  "fragmentationTime": 0.974874,
+  "reencodingTime": 0.31989,
+  "dockerOutput": "..."
+}
+```
+
+### Key Services
+
+#### FragmentationService
+**Purpose**: Execute Docker fragmentation and parse metrics
+
+**Key Method**: `executeFragmentation(boolean cleanAfter)`
+- Cleans bindata and outputdata directories
+- Builds Docker command with user mapping (`--user $(id -u):$(id -g)`)
+- Executes newfastencoder container
+- Parses Docker output for metrics
+- Counts generated fragments
+- Optionally cleans rawdata and bindata after completion
+
+**Docker Command**:
+```bash
+docker run --rm \
+  --user 1000:1000 \
+  -v /path/to/rawdata:/rawdata \
+  -v /path/to/bindata:/bindata \
+  -v /path/to/outputdata:/outputdata \
+  newfastencoder \
+  /rawdata/ /bindata/data.nt
+```
+
+**Metrics Parsing**: Extracts from Docker output:
+- Total triples
+- Encoding time
+- Dictionaries time
+- Sorting time
+- Fragmentation time
+- Re-encoding time
+- Total execution time
+- Throughput (triples/second)
+
+#### FileStorageService
+**Purpose**: Manage file system operations
+
+**Methods**:
+- `uploadFiles()`: Save uploaded files to rawdata
+- `listFiles()`: Get list of files with sizes
+- `clearRawdata()`: Delete uploaded RDF files
+- `clearBindata()`: Delete temporary intermediate files
+- `getStorageSize()`: Calculate total storage size
+
+**Directory Cleanup**: Uses `Files.walk()` with `Comparator.reverseOrder()` to delete files AND subdirectories
+
+### Docker User Mapping Solution
+
+**Problem**: Docker created files as root, Spring Boot couldn't delete them
+
+**Solution**: Added `--user $(id -u):$(id -g)` to Docker command
+- Files now created with application user ownership
+- Cleanup works without permission issues
+- No need for sudo or manual cleanup
+
+## Frontend (Angular)
+
+### Technology Stack
+- **Framework**: Angular 18 (standalone components)
+- **Language**: TypeScript
+- **Styling**: SCSS with gradient design
+- **HTTP Client**: Angular HttpClient
+- **Build Tool**: Angular CLI
+
+### Project Structure
+```
+frontend/src/app/
+├── components/
+│   ├── file-upload/              # Drag & drop file upload
+│   │   ├── file-upload.component.ts
+│   │   ├── file-upload.component.html
+│   │   └── file-upload.component.scss
+│   └── fragmentation-results/    # Metrics dashboard
+│       ├── fragmentation-results.component.ts
+│       ├── fragmentation-results.component.html
+│       └── fragmentation-results.component.scss
+├── services/
+│   ├── file.service.ts           # File upload/list/clear
+│   └── fragmentation.service.ts  # Start fragmentation
+├── models/
+│   ├── fragmentation-result.ts   # Result interface
+│   ├── fragmentation-request.ts  # Request interface
+│   └── upload-response.ts        # Upload response
+├── config/
+│   └── api.config.ts             # API base URL
+├── app.component.ts
+├── app.component.html
+├── app.component.scss
+└── app.config.ts                 # App configuration
+```
+
+### Key Components
+
+#### FileUploadComponent
+**Features**:
+- Drag & drop zone with visual feedback
+- File list with size display
+- Remove individual files
+- Validation (.nt and .ttl only)
+- Upload progress indication
+- Success/error messages
+
+**Styling**:
+- Modern gradient background
+- Hover effects
+- Responsive design
+- Icons for file types
+
+#### FragmentationResultsComponent
+**Features**:
+- 4 key metric cards:
+  - Fragment count
+  - Total triples
+  - Execution time
+  - Throughput (triples/sec)
+- Phase breakdown with colored progress bars:
+  - Data encoding (blue)
+  - Dictionaries (green)
+  - Sorting (orange)
+  - Fragmentation (purple)
+  - Re-encoding (red)
+- Percentage calculation for each phase
+- Responsive grid layout
+
+### Services
+
+#### FileService
+**Methods**:
+- `uploadFiles(files: FileList)`: Upload RDF files
+- `listFiles()`: Get uploaded files list
+- `clearFiles()`: Delete all files
+
+#### FragmentationService
+**Methods**:
+- `startFragmentation(request: FragmentationRequest)`: Execute fragmentation
+
+### Configuration
+
+**API_CONFIG** (`config/api.config.ts`):
+```typescript
+export const API_CONFIG = {
+  apiUrl: 'http://localhost:8080/api'
+};
+```
+
+**Why not environment files?**
+- Angular 18 standalone components don't auto-wire environment files
+- Simpler centralized configuration
+- No build configuration needed
+
+### Styling
+**Global styles** (`styles.scss`):
+- CSS reset
+- Modern gradient backgrounds
+- Consistent color scheme
+- Responsive typography
+
+**Component styles**:
+- Scoped SCSS per component
+- Gradient effects
+- Box shadows and borders
+- Smooth transitions
+
+## Deployment & Testing
+
+### Backend Deployment
+```bash
+cd backend/api
+mvn spring-boot:run
+```
+**Runs on**: http://localhost:8080
+
+### Frontend Deployment
+```bash
+cd frontend
+ng serve --open
+```
+**Runs on**: http://localhost:4200
+
+### Full Workflow Test
+1. ✅ Open http://localhost:4200
+2. ✅ Drag & drop .nt or .ttl file
+3. ✅ Click "Upload Files"
+4. ✅ Check/uncheck "Clean after fragmentation"
+5. ✅ Click "Start Fragmentation"
+6. ✅ View real-time results with all metrics
+7. ✅ Verify fragments created in storage/outputdata/
+8. ✅ Verify cleanup if enabled (rawdata and bindata empty)

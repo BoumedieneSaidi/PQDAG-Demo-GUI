@@ -1,0 +1,50 @@
+<div class="app-container">
+  <header class="app-header">
+    <div class="header-content">
+      <h1>🔷 {{ title }}</h1>
+      <p class="subtitle">Distributed RDF Database - Fragment Processing</p>
+    </div>
+  </header>
+
+  <main class="app-main">
+    <section class="section">
+      <app-file-upload></app-file-upload>
+    </section>
+
+    <section class="section fragmentation-controls">
+      <div class="controls-card">
+        <h2>Fragmentation Process</h2>
+        <p class="description">
+          Process uploaded RDF files and generate fragments using the PQDAG algorithm.
+        </p>
+        
+        <div class="control-group">
+          <label class="checkbox-label">
+            <input type="checkbox" #cleanAfterCheckbox>
+            <span>Clean raw data after fragmentation</span>
+          </label>
+        </div>
+
+        <div class="error-message" *ngIf="errorMessage">
+          {{ errorMessage }}
+        </div>
+
+        <button 
+          class="btn btn-start"
+          [disabled]="isProcessing"
+          (click)="startFragmentation(cleanAfterCheckbox.checked)">
+          <span *ngIf="!isProcessing">▶ Start Fragmentation</span>
+          <span *ngIf="isProcessing">⏳ Processing...</span>
+        </button>
+      </div>
+    </section>
+
+    <section class="section" *ngIf="fragmentationResult">
+      <app-fragmentation-results [result]="fragmentationResult"></app-fragmentation-results>
+    </section>
+  </main>
+
+  <footer class="app-footer">
+    <p>PQDAG GUI © 2025 - Distributed RDF Query Processing</p>
+  </footer>
+</div>
