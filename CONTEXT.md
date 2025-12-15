@@ -100,22 +100,58 @@ The main workflow in `FastEncoder.cpp`:
   - Index files
 
 ### Docker Workflow
-```bash
-# Build Docker image
-docker build -t newfastencoder .
 
-# Prepare directories
+#### Étape 1 : Build de l'image (une seule fois)
+```bash
+cd /path/to/backend/fragmentation
+docker build -t newfastencoder .
+```
+
+#### Étape 2 : Préparation de l'espace de stockage
+L'utilisateur configure un **répertoire de travail** dans la GUI :
+```
+/espace-de-stockage/          # Configurable dans la GUI
+├── rawdata/                  # INPUT - Fichiers RDF (.nt, .ttl)
+│   ├── file1.nt             # Peut contenir PLUSIEURS fichiers
+│   ├── file2.nt             # Le code lit TOUS les fichiers du dossier
+│   └── dataset.ttl
+├── bindata/                  # TEMPORAIRE - Fichiers intermédiaires
+│   ├── data.nt              # (peut être supprimé après)
+│   ├── data.nt_spo
+│   ├── data.nt_ops
+│   ├── nodes.dic
+│   ├── schema.txt
+│   ├── so_db/               # RocksDB pour sujets/objets
+│   ├── predicates_db/       # RocksDB pour prédicats
+│   └── fragment_*
+└── outputdata/               # OUTPUT - Résultats finaux
+    ├── fragment_spo_*        # Fragments SPO
+    ├── fragment_ops_*        # Fragments OPS
+    ├── predicates.txt        # Schema des prédicats
+    ├── spo_index.txt         # Index SPO
+    └── ops_index.txt         # Index OPS
+```
+
+#### Étape 3 : Exécution de la fragmentation
+```bash
+# Préparer les dossiers
 rm -r bindata outputdata
 mkdir bindata outputdata
 
-# Run fragmentation
+# Lancer la fragmentation
 docker run -it --rm \
-  -v /$(pwd)/rawdata:/rawdata \
-  -v /$(pwd)/bindata:/bindata \
-  -v /$(pwd)/outputdata:/outputdata \
+  -v /espace-de-stockage/rawdata:/rawdata \
+  -v /espace-de-stockage/bindata:/bindata \
+  -v /espace-de-stockage/outputdata:/outputdata \
   newfastencoder \
-  /app/NewFastEncoder/Release/NewFastEncoder /rawdata/ /bindata/watdiv100k.nt
+  /app/NewFastEncoder/Release/NewFastEncoder /rawdata/ /bindata/data.nt
 ```
+
+**Note importante** : 
+- Le 1er argument (`/rawdata/`) = **répertoire** contenant les fichiers RDF
+- Le 2ème argument (`/bindata/data.nt`) = nom du fichier de sortie encodé
+- Le code lit **TOUS les fichiers** du répertoire `/rawdata/` automatiquement (via la fonction `getdir()`)
+- Formats supportés : N-Triples (.nt) et Turtle (.ttl)
 
 ### Fragmentation Algorithm
 Based on **Characteristic Sets**:
@@ -150,12 +186,169 @@ Based on **Characteristic Sets**:
   - Implements characteristic set-based fragmentation
   - Processes: Encoding → Sorting → Fragmentation → Indexing → Re-encoding
 
+### Git Workflow Strategy
+
+#### Branch Structure
+```
+main          # Stable, production-ready code
+  └── develop       # Integration branch
+        └── feature/backend-setup   # Current: Backend setup & fragmentation
+```
+
+#### Git Flow Pattern
+- **main**: Protected branch, only for stable releases
+- **develop**: Integration branch for ongoing development
+- **feature/***: Feature branches for specific work
+- **Current branch**: `feature/backend-setup`
+
+#### Development Workflow
+1. Create feature branch from develop
+2. Work on feature
+3. Test and validate
+4. Merge to develop
+5. After testing on develop, merge to main
+
+### Docker Optimization Journey
+
+#### Initial Approach (Volume-Mounted Code)
+- Problem: RocksDB version mismatch (precompiled with 9.8, Docker has 10.10)
+- Solution: Volume mount source code and compile inside container
+- Issue: Not portable, requires manual compilation
+
+#### C++20 Compatibility Fix
+**Problem**: RocksDB 10.10 requires C++20 standard
+- Error: `defaulted operator== only available with '-std=c++20'`
+
+**Solution**: Modified Makefiles permanently
+1. `backend/fragmentation/NewFastEncoder/Release/makefile`:
+   - Added: `CXXFLAGS = -std=c++20 -I/usr/local/include`
+2. `backend/fragmentation/NewFastEncoder/Release/src/subdir.mk`:
+   - Modified compilation rule: `g++ -std=c++20 -g -O0 -I/usr/local/include ...`
+
+#### Final Approach (Embedded Code)
+**Dockerfile Optimization**:
+```dockerfile
+# Copy source code into image
+COPY NewFastEncoder /app/NewFastEncoder
+
+# Compile during build (not runtime)
+WORKDIR /app/NewFastEncoder/Release
+RUN make clean && make
+
+# Set entrypoint
+ENTRYPOINT ["/app/NewFastEncoder/Release/NewFastEncoder"]
+```
+
+**Benefits**:
+- ✅ Portable: Works anywhere without manual fixes
+- ✅ Fast rebuild: 28 seconds (vs 16 minutes initial) thanks to layer caching
+- ✅ Pre-compiled: No compilation at runtime
+- ✅ Simplified command: Just mount data volumes
+
+**Build Performance**:
+- Initial build: ~16 minutes (RocksDB compilation)
+- Rebuild after code changes: ~28 seconds (cached layers)
+- Image size: 3.47 GB
+
+### Fragmentation Test Results ✅
+
+#### Test Configuration
+- **Dataset**: watdiv100k.nt (15 MB, 110,828 triples)
+- **Docker Command**:
+```bash
+docker run --rm \
+  -v "/home/boumi/Documents/PQDAG GUI/storage/rawdata":/rawdata \
+  -v "/home/boumi/Documents/PQDAG GUI/storage/bindata":/bindata \
+  -v "/home/boumi/Documents/PQDAG GUI/storage/outputdata":/outputdata \
+  newfastencoder \
+  /rawdata/ /bindata/data.nt
+```
+
+#### Performance Metrics
+```
+Total triples processed: 110,828
+┌─────────────────────┬──────────┐
+│ Phase               │ Time     │
+├─────────────────────┼──────────┤
+│ Data encoding       │ 0.096s   │
+│ Dictionaries        │ 0.005s   │
+│ Sorting (SPO+OPS)   │ 0.094s   │
+│ Fragmentation       │ 0.410s   │
+│ Re-encoding         │ 0.300s   │
+├─────────────────────┼──────────┤
+│ TOTAL               │ 0.952s   │
+└─────────────────────┴──────────┘
+
+Throughput: ~116,000 triples/second
+```
+
+#### Output Generated
+- **918 fragments** created
+- Each fragment has 3 files:
+  - `.data` - Fragment data (23 bytes to 1.2 MB)
+  - `.dic` - Dictionary mapping
+  - `.schema` - Schema information
+- **Index files**:
+  - `predicates.txt` (4.4 KB)
+  - `spo_index.txt` (20 KB)
+  - `ops_index.txt` (1.3 KB)
+
+#### Validation
+- ✅ All fragments generated successfully
+- ✅ Performance: <1 second for 100k triples
+- ✅ Output structure correct (data, dic, schema files)
+- ✅ Indexes created properly
+- ✅ Docker solution is portable and reproducible
+
+### Storage Configuration
+
+#### Directory Structure
+```
+storage/                    # Excluded from Git (.gitignore)
+├── rawdata/               # INPUT - RDF files
+│   └── watdiv100k.nt     # Test dataset (15 MB, 110k triples)
+├── bindata/               # TEMPORARY - Intermediate files
+│   ├── data.nt           # Encoded triples
+│   ├── data.nt_spo       # SPO sorted
+│   ├── data.nt_ops       # OPS sorted
+│   └── nodes.dic         # Dictionary
+└── outputdata/            # OUTPUT - Final fragments (918 files)
+    ├── 794.data, 794.dic, 794.schema
+    ├── 795.data, 795.dic, 795.schema
+    ├── ... (918 fragments total)
+    ├── predicates.txt
+    ├── spo_index.txt
+    └── ops_index.txt
+```
+
 ## Next Steps
-- **Phase 1**: Continue discussion to understand Allocation and Core steps
-- Understand the complete workflow between the 3 steps
-- Define GUI requirements for each step
-- Choose GUI technology stack
-- Design UI/UX mockups
+
+### Immediate Tasks
+- ✅ Update CONTEXT.md with test results (Done)
+- ⏳ Commit changes to Git
+  - Modified: Dockerfile, Makefiles (C++20 fixes)
+  - Branch: feature/backend-setup
+  - Message: "Fix C++20 compatibility and optimize Docker build for fragmentation"
+
+### Phase 2: Allocation Step
+- Understand how fragments are distributed to machines
+- Required configuration (machine list, IPs, network)
+- Allocation algorithm (file copy, network transfer, logical mapping)
+- Integration with fragmentation output
+- Docker setup for allocation step
+
+### Phase 3: Core/Query Step
+- Query execution engine
+- SPARQL query handling
+- Distributed query processing across fragments
+- Result aggregation
+
+### Phase 4: GUI Development
+- Technology stack selection (web/desktop)
+- Features for each step (fragmentation, allocation, core)
+- Monitoring and logging interface
+- Configuration management UI
+- Execution control and status display
 
 ## Current Phase
-🗣️ **Discovery & Planning Phase** - Understanding the fragmentation step. Next: Allocation and Core steps.
+✅ **Fragmentation Testing Complete** - Ready to understand Allocation step (Step 2/3).
