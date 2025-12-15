@@ -13,6 +13,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -53,6 +54,26 @@ public class FragmentationService {
         command.add("docker");
         command.add("run");
         command.add("--rm");
+        // Run with current user's UID:GID to avoid permission issues
+        command.add("--user");
+        String userId = System.getProperty("user.name");
+        try {
+            // Get current user's UID:GID on Linux
+            ProcessBuilder idBuilder = new ProcessBuilder("id", "-u");
+            Process idProcess = idBuilder.start();
+            String uid = new BufferedReader(new InputStreamReader(idProcess.getInputStream()))
+                    .readLine().trim();
+            
+            idBuilder = new ProcessBuilder("id", "-g");
+            idProcess = idBuilder.start();
+            String gid = new BufferedReader(new InputStreamReader(idProcess.getInputStream()))
+                    .readLine().trim();
+            
+            command.add(uid + ":" + gid);
+        } catch (Exception e) {
+            // Fallback to current user if id command fails (e.g., on Windows)
+            command.add(userId);
+        }
         command.add("-v");
         command.add(rawdataDir + ":/rawdata");
         command.add("-v");
@@ -199,7 +220,7 @@ public class FragmentationService {
     }
 
     /**
-     * Clean a directory (remove all files)
+     * Clean a directory (remove all files and subdirectories)
      */
     private void cleanDirectory(Path directory) throws IOException {
         if (!Files.exists(directory)) {
@@ -208,7 +229,8 @@ public class FragmentationService {
         }
 
         Files.walk(directory)
-                .filter(Files::isRegularFile)
+                .sorted(Comparator.reverseOrder()) // Delete files before directories
+                .filter(p -> !p.equals(directory)) // Keep the root directory
                 .forEach(p -> {
                     try {
                         Files.delete(p);

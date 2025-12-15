@@ -10,6 +10,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 
 @Service
@@ -115,7 +116,7 @@ public class FileStorageService {
     }
 
     /**
-     * Clear bindata directory (temporary files)
+     * Clear bindata directory (temporary files and subdirectories)
      */
     public void clearBindata() throws IOException {
         Path bindataDir = Paths.get(bindataPath).toAbsolutePath().normalize();
@@ -124,7 +125,8 @@ public class FileStorageService {
         }
 
         Files.walk(bindataDir)
-                .filter(Files::isRegularFile)
+                .sorted(Comparator.reverseOrder()) // Delete files before directories
+                .filter(p -> !p.equals(bindataDir)) // Keep the root directory
                 .forEach(p -> {
                     try {
                         Files.delete(p);
