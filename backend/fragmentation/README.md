@@ -68,26 +68,6 @@ docker run --rm \
 
 **Note**: The code automatically reads ALL `.nt` and `.ttl` files in the rawdata directory.
 
-## Performance
-
-Tested on **watdiv100k.nt** (15 MB, 110,828 triples):
-
-```
-┌─────────────────────┬──────────┐
-│ Phase               │ Time     │
-├─────────────────────┼──────────┤
-│ Data encoding       │ 0.096s   │
-│ Dictionaries        │ 0.005s   │
-│ Sorting (SPO+OPS)   │ 0.094s   │
-│ Fragmentation       │ 0.410s   │
-│ Re-encoding         │ 0.300s   │
-├─────────────────────┼──────────┤
-│ TOTAL               │ 0.952s   │
-└─────────────────────┴──────────┘
-
-Throughput: ~116,000 triples/second
-Output: 918 fragments
-```
 
 ## Output Structure
 
