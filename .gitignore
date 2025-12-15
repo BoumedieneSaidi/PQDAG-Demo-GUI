@@ -7,3 +7,9 @@ storage/outputdata/*
 !storage/rawdata/.gitkeep
 !storage/bindata/.gitkeep
 !storage/outputdata/.gitkeep
+
+# Maven build artifacts
+backend/api/target/
+
+# Test datasets
+test-dataset.nt
