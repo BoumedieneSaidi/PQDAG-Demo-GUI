@@ -1,0 +1,2 @@
+# This file ensures the rawdata directory is tracked by Git
+# Place your RDF input files (.nt, .ttl) here
