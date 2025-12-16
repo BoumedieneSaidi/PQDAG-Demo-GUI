@@ -6,18 +6,82 @@
 - **Repository**: https://github.com/BoumedieneSaidi/PQDAG-Demo-GUI.git
 - **Owner**: BoumedieneSaidi
 - **Main Branch**: main
-- **Current Feature Branch**: feature/angular-frontend
+- **Current Branch**: develop
 
 ## About PQDAG
 PQDAG is a distributed RDF database system for managing and querying large-scale RDF data through fragmentation and distribution.
 
-## Current Status
-- ✅ Repository created on GitHub (Dec 15, 2025)
-- ✅ Backend API implemented with Spring Boot (merged to develop)
-- ✅ Docker integration for fragmentation engine
-- ✅ Angular frontend with drag & drop upload and metrics dashboard
-- ✅ Full workflow tested and working
-- ⏳ Frontend branch ready for merge
+## Current Status (Dec 16, 2025)
+- ✅ **Phase 1**: Fragmentation - COMPLETED
+- ✅ **Phase 2**: Allocation & Distribution - COMPLETED
+- ✅ Deployed to cluster master node (192.168.165.27)
+- ✅ Docker Compose deployment working
+- ✅ SSH tunnel configured for remote access
+- ✅ Storage paths corrected (pqdag-storage)
+- ⚠️ **CURRENT ISSUE**: File upload not working - Need to debug backend
+
+## Deployment Information
+
+### Cluster Architecture
+- **Bastion**: 193.55.163.204 (user: bsaidi, password: bsaidi)
+- **Master**: 192.168.165.27 (user: ubuntu, via SSH jump through bastion)
+- **Workers**: 10 nodes at 192.168.165.{101,138,80,89,126,249,194,46,233,63}
+- **Storage**: /dev/vdb mounted at ~/mounted_vol (787GB total, 528GB free)
+
+### Deployment Location
+- **Application**: ~/mounted_vol/pqdag-gui
+- **Storage**: ~/mounted_vol/pqdag-storage
+  - rawdata/ - Uploaded RDF files
+  - bindata/ - Fragmentation output
+  - outputdata/ - Allocation results
+  - allocation_results/ - Allocation metadata
+  - allocation_temp/ - Temporary files
+
+### Services (Docker Compose)
+- **pqdag-frontend**: Angular 17 + nginx (port 80)
+- **pqdag-api**: Spring Boot 3.2.1 + Java 17 (port 8080)
+- **pqdag-allocation**: Python + MPI + METIS (background service)
+
+### Access Methods
+1. **SSH Direct**: `ssh -J bsaidi@193.55.163.204 ubuntu@192.168.165.27`
+2. **SSH Tunnel**: `./tunnel-to-master.sh` (ports 9000→80, 9080→8080)
+3. **Remote-SSH in VS Code**: Host `pqdag-master` (recommended for debugging)
+
+### VS Code Remote-SSH Configuration
+Already configured in `~/.ssh/config`:
+```ssh
+Host pqdag-master
+    HostName 192.168.165.27
+    User ubuntu
+    ProxyJump bsaidi@193.55.163.204
+```
+
+**To connect**: F1 → "Remote-SSH: Connect to Host" → "pqdag-master" → Password: bsaidi
+
+## Recent Issues Fixed
+1. ✅ CSS budget exceeded (allocation.component.scss) → Increased to 15kB
+2. ✅ Docker build path error → Changed to dist/frontend/browser
+3. ✅ Storage volume misconfiguration → Fixed to ~/mounted_vol/pqdag-storage
+4. ✅ Port conflicts in tunnel → Changed to 9000/9080
+5. ⚠️ **Upload still failing** - Services restarted but upload endpoint not working
+
+## Current Problem (TO DEBUG)
+**Issue**: File upload fails in GUI despite storage fix
+**What was done**:
+- ✅ Created correct storage structure (rawdata/, bindata/, etc.)
+- ✅ Updated docker-compose.override.yml with correct volumes
+- ✅ Added STORAGE_PATH=/app/storage environment variable
+- ✅ Restarted all services (docker-compose down && up -d)
+- ✅ Verified write permissions in container (test file created successfully)
+
+**What needs verification**:
+- [ ] Backend service is running (`docker-compose ps`)
+- [ ] Backend logs show no errors (`docker-compose logs api`)
+- [ ] API responds on port 8080 (`curl http://localhost:8080/api/fragmentation/status`)
+- [ ] Frontend calling correct API URL (check browser DevTools)
+- [ ] Spring Boot reading STORAGE_PATH correctly
+- [ ] No CORS issues between frontend and backend
+- [ ] Upload endpoint configuration in application.properties
 
 ## Git Setup Commands Used
 ```bash
@@ -33,9 +97,39 @@ git push -u origin main
 
 ### PQDAG System Overview
 PQDAG has **3 main steps**:
-1. **Fragmentation** ✅ - Creates fragments from RDF data (IMPLEMENTED)
-2. **Allocation** - Distributes fragments to different machines (to be added)
-3. **Core** - Handles query execution (to be added)
+1. **Fragmentation** ✅ - Creates fragments from RDF data (Phase 1 - COMPLETED)
+2. **Allocation** ✅ - Distributes fragments to cluster nodes (Phase 2 - COMPLETED)
+3. **Distribution** ✅ - Physical distribution to workers (Phase 2 - COMPLETED)
+
+### Phase 2 Implementation Details
+
+#### Allocation System
+- **Algorithm**: Weighted METIS graph partitioning
+- **Location**: `backend/allocation/`
+- **Technology**: Python + MPI + METIS
+- **Inputs**:
+  - Fragment graph from fragmentation step
+  - Cluster configuration (workers, partitions)
+- **Output**: Fragment-to-node mapping in `allocation_results/affectation_weighted_metis.txt`
+
+#### Distribution System
+- **Purpose**: Physical distribution of fragments to worker nodes
+- **Method**: SSH-based parallel transfer using MPI
+- **Configuration**: 
+  - Workers defined in `backend/allocation/workers` file
+  - Master node in `backend/allocation/master` file
+- **Features**:
+  - Parallel transfer using MPI
+  - Progress tracking
+  - Error handling and retry logic
+
+#### Key Files
+- `backend/allocation/allocation_approaches/weighted_metis.py` - METIS partitioning
+- `backend/allocation/distribute_fragments.py` - Distribution orchestrator
+- `backend/allocation/loader_btree/fragments_loader.py` - Fragment loading
+- `backend/allocation/utils/sender.py` - Parallel SSH transfer
+- `backend/allocation/config.yaml` - Allocation configuration
+- `backend/allocation/config_runtime.yaml` - Runtime parameters
 
 ### Repository Structure
 ```
@@ -389,14 +483,25 @@ storage/                    # Excluded from Git (.gitignore)
   - Spring DevTools
   - Lombok (reduce boilerplate)
   
-### Configuration
+### Configuration (On Cluster Master)
 - **Port**: 8080
-- **CORS**: Enabled for `http://localhost:4200` (Angular dev server)
+- **CORS**: Enabled for nginx frontend
 - **File Upload**: Max size 1GB
-- **Storage Paths**:
-  - rawdata: `../../storage/rawdata`
-  - bindata: `../../storage/bindata`
-  - outputdata: `../../storage/outputdata`
+- **Storage Paths** (via environment variable):
+  - STORAGE_PATH: `/app/storage`
+  - rawdata: `/app/storage/rawdata`
+  - bindata: `/app/storage/bindata`
+  - outputdata: `/app/storage/outputdata`
+  - allocation_results: `/app/storage/allocation_results`
+  - allocation_temp: `/app/storage/allocation_temp`
+
+### Docker Volume Mounting
+```yaml
+volumes:
+  - ~/mounted_vol/pqdag-storage:/app/storage
+```
+
+**Important**: The storage path was corrected from `pqdag_data` (old datasets) to `pqdag-storage` (proper structure)
 
 ### REST Endpoints
 
@@ -621,7 +726,7 @@ frontend/src/app/
 **Methods**:
 - `startFragmentation(request: FragmentationRequest)`: Execute fragmentation
 
-### Configuration
+### Configuration (Development)
 
 **API_CONFIG** (`config/api.config.ts`):
 ```typescript
@@ -630,39 +735,67 @@ export const API_CONFIG = {
 };
 ```
 
-**Why not environment files?**
-- Angular 18 standalone components don't auto-wire environment files
-- Simpler centralized configuration
-- No build configuration needed
+### Configuration (Production - On Cluster)
+**API_CONFIG** uses relative paths for nginx proxy:
+```typescript
+export const API_CONFIG = {
+  apiUrl: '/api'  // Proxied by nginx to backend:8080
+};
+```
 
-### Styling
-**Global styles** (`styles.scss`):
-- CSS reset
-- Modern gradient backgrounds
-- Consistent color scheme
-- Responsive typography
-
-**Component styles**:
-- Scoped SCSS per component
-- Gradient effects
-- Box shadows and borders
-- Smooth transitions
+**nginx.conf** in frontend:
+```nginx
+server {
+  listen 80;
+  location / {
+    root /usr/share/nginx/html;
+    try_files $uri $uri/ /index.html;
+  }
+  location /api {
+    proxy_pass http://api:8080;
+  }
+}
+```
 
 ## Deployment & Testing
 
-### Backend Deployment
+### Local Development
+**Backend**:
 ```bash
 cd backend/api
 mvn spring-boot:run
 ```
 **Runs on**: http://localhost:8080
 
-### Frontend Deployment
+**Frontend**:
 ```bash
 cd frontend
 ng serve --open
 ```
 **Runs on**: http://localhost:4200
+
+### Cluster Deployment
+**Deploy to Master**:
+```bash
+./deploy-to-master.sh
+```
+This script:
+1. Builds Docker images locally
+2. Transfers code to master via SSH
+3. Builds images on master
+4. Starts services with docker-compose
+5. Creates docker-compose.override.yml with volume mounts
+
+**Access via SSH Tunnel**:
+```bash
+./tunnel-to-master.sh
+```
+Then open:
+- Frontend: http://localhost:9000
+- Backend API: http://localhost:9080
+
+**Access via Remote-SSH**:
+Connect to `pqdag-master` host in VS Code
 
 ### Full Workflow Test
 1. ✅ Open http://localhost:4200
@@ -673,3 +806,120 @@ ng serve --open
 6. ✅ View real-time results with all metrics
 7. ✅ Verify fragments created in storage/outputdata/
 8. ✅ Verify cleanup if enabled (rawdata and bindata empty)
+
+## Debugging Checklist (For Remote-SSH Session)
+
+### Quick Status Check
+```bash
+# In terminal on master (~/mounted_vol/pqdag-gui)
+docker-compose ps                          # Check all services status
+docker-compose logs --tail=50 api          # Check backend logs
+docker-compose logs --tail=50 frontend     # Check frontend logs
+curl http://localhost:8080/api/fragmentation/status  # Test API
+ls -lah ~/mounted_vol/pqdag-storage/       # Verify storage structure
+```
+
+### Backend Debugging Steps
+1. **Verify service is running**:
+   ```bash
+   docker-compose ps api
+   # Should show "Up" status
+   ```
+
+2. **Check backend logs for errors**:
+   ```bash
+   docker-compose logs -f api
+   # Look for: startup errors, upload errors, path errors
+   ```
+
+3. **Test API endpoint**:
+   ```bash
+   curl -X POST -F "file=@testfile.txt" http://localhost:8080/api/fragmentation/upload
+   # Should return success or specific error
+   ```
+
+4. **Verify environment variables**:
+   ```bash
+   docker exec pqdag-api env | grep STORAGE
+   # Should show: STORAGE_PATH=/app/storage
+   ```
+
+5. **Check Spring Boot configuration**:
+   ```bash
+   cat backend/api/src/main/resources/application.properties
+   # Verify storage.path or similar settings
+   ```
+
+### Frontend Debugging Steps
+1. **Check nginx is serving frontend**:
+   ```bash
+   curl http://localhost:80
+   # Should return HTML
+   ```
+
+2. **Verify API proxy configuration**:
+   ```bash
+   docker exec pqdag-frontend cat /etc/nginx/conf.d/default.conf
+   # Check location /api proxy_pass
+   ```
+
+3. **Browser DevTools (on local machine)**:
+   - Open http://localhost:9000 (via tunnel)
+   - F12 → Network tab
+   - Attempt file upload
+   - Check: Request URL, Status Code, Response
+
+### Common Issues and Fixes
+
+**Issue: Upload returns 404**
+- Check: Frontend API_CONFIG points to correct URL
+- Check: nginx proxy_pass configuration
+- Fix: Verify /api location in nginx.conf
+
+**Issue: Upload returns 500**
+- Check: Backend logs for exceptions
+- Check: Storage path exists in container
+- Fix: Verify STORAGE_PATH env var and volume mount
+
+**Issue: Upload returns CORS error**
+- Check: Backend CORS configuration in WebConfig
+- Fix: Add @CrossOrigin to controller or configure WebMvcConfigurer
+
+**Issue: Upload works but file not in storage**
+- Check: Volume mount in docker-compose.override.yml
+- Check: File permissions on host (~/mounted_vol/pqdag-storage)
+- Fix: `chown -R 1000:1000 ~/mounted_vol/pqdag-storage`
+
+### Restart Services
+```bash
+# Restart all services
+docker-compose restart
+
+# Restart specific service
+docker-compose restart api
+
+# Full rebuild
+docker-compose down
+docker-compose build --no-cache api
+docker-compose up -d
+```
+
+### View Real-time Logs
+```bash
+# All services
+docker-compose logs -f
+
+# Specific service
+docker-compose logs -f api
+
+# Last N lines
+docker-compose logs --tail=100 api
+```
+
+## Next Steps After Upload Fix
+1. Test complete fragmentation workflow
+2. Test allocation workflow
+3. Test distribution to workers
+4. Monitor cluster performance
+5. Document any remaining issues
+
