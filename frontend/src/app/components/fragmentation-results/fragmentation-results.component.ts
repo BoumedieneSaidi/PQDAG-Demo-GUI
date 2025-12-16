@@ -1,4 +1,4 @@
-import { Component, Input } from '@angular/core';
+import { Component, Input, Output, EventEmitter } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FragmentationResult } from '../../models/fragmentation.model';
 
@@ -11,6 +11,7 @@ import { FragmentationResult } from '../../models/fragmentation.model';
 })
 export class FragmentationResultsComponent {
   @Input() result: FragmentationResult | null = null;
+  @Output() navigateToAllocationView = new EventEmitter<void>();
 
   getPhasePercentage(phaseTime: number | null): number {
     if (!phaseTime || !this.result?.executionTimeSeconds) return 0;
@@ -26,5 +27,9 @@ export class FragmentationResultsComponent {
       return `${(seconds * 1000).toFixed(2)} ms`;
     }
     return `${seconds.toFixed(3)} s`;
+  }
+
+  navigateToAllocation(): void {
+    this.navigateToAllocationView.emit();
   }
 }

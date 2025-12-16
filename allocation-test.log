@@ -1,0 +1,99 @@
+==========================================
+Test Allocation - watdiv100k
+==========================================
+
+[0;32m✅ 918 fragments détectés[0m
+
+[1;33m=== ÉTAPE 1: Calcul des statistiques (MPI) ===[0m
+Commande: mpiexec -n 4 python3 stat_MPI.py
+
+hwloc/linux: Ignoring PCI device with non-16bit domain.
+Pass --enable-32bits-pci-domain to configure to support such devices
+(warning: it would break the library ABI, don't enable unless really needed).
+Start Working in rank :  2
+Start Working in rank :  3
+Start Working in rank :  0
+Start Working in rank :  1
+Traceback (most recent call last):
+  File "/app/allocation/stat_MPI.py", line 189, in <module>
+    main() Traceback (most recent call last):
+  File "/app/allocation/stat_MPI.py", line 189, in <module>
+    main() 
+Traceback (most recent call last):
+  File "/app/allocation/stat_MPI.py", line 189, in <module>
+    main() 
+  File "/app/allocation/stat_MPI.py", line 26, in main
+Traceback (most recent call last):
+  File "/app/allocation/stat_MPI.py", line 189, in <module>
+    main() 
+  File "/app/allocation/stat_MPI.py", line 26, in main
+
+  File "/app/allocation/stat_MPI.py", line 26, in main
+    l=statcalculation(path,spath,fgs_list,rank) 
+  File "/app/allocation/stat_MPI.py", line 105, in statcalculation
+    spo_index_df = pd.read_csv(spo_index, delimiter=';', names=index_colnames, header=None) 
+  File "/app/allocation/stat_MPI.py", line 26, in main
+    l=statcalculation(path,spath,fgs_list,rank) 
+  File "/app/allocation/stat_MPI.py", line 105, in statcalculation
+    l=statcalculation(path,spath,fgs_list,rank) 
+  File "/app/allocation/stat_MPI.py", line 105, in statcalculation
+    spo_index_df = pd.read_csv(spo_index, delimiter=';', names=index_colnames, header=None) 
+  File "/usr/local/lib/python3.10/dist-packages/pandas/io/parsers/readers.py", line 1026, in read_csv
+    l=statcalculation(path,spath,fgs_list,rank) 
+  File "/app/allocation/stat_MPI.py", line 105, in statcalculation
+    spo_index_df = pd.read_csv(spo_index, delimiter=';', names=index_colnames, header=None) 
+  File "/usr/local/lib/python3.10/dist-packages/pandas/io/parsers/readers.py", line 1026, in read_csv
+  File "/usr/local/lib/python3.10/dist-packages/pandas/io/parsers/readers.py", line 1026, in read_csv
+    spo_index_df = pd.read_csv(spo_index, delimiter=';', names=index_colnames, header=None) 
+  File "/usr/local/lib/python3.10/dist-packages/pandas/io/parsers/readers.py", line 1026, in read_csv
+    return _read(filepath_or_buffer, kwds)
+  File "/usr/local/lib/python3.10/dist-packages/pandas/io/parsers/readers.py", line 620, in _read
+    parser = TextFileReader(filepath_or_buffer, **kwds)
+  File "/usr/local/lib/python3.10/dist-packages/pandas/io/parsers/readers.py", line 1620, in __init__
+    return _read(filepath_or_buffer, kwds)
+  File "/usr/local/lib/python3.10/dist-packages/pandas/io/parsers/readers.py", line 620, in _read
+    parser = TextFileReader(filepath_or_buffer, **kwds)
+  File "/usr/local/lib/python3.10/dist-packages/pandas/io/parsers/readers.py", line 1620, in __init__
+    return _read(filepath_or_buffer, kwds)
+  File "/usr/local/lib/python3.10/dist-packages/pandas/io/parsers/readers.py", line 620, in _read
+    parser = TextFileReader(filepath_or_buffer, **kwds)
+  File "/usr/local/lib/python3.10/dist-packages/pandas/io/parsers/readers.py", line 1620, in __init__
+    return _read(filepath_or_buffer, kwds)
+  File "/usr/local/lib/python3.10/dist-packages/pandas/io/parsers/readers.py", line 620, in _read
+    parser = TextFileReader(filepath_or_buffer, **kwds)
+  File "/usr/local/lib/python3.10/dist-packages/pandas/io/parsers/readers.py", line 1620, in __init__
+    self._engine = self._make_engine(f, self.engine)
+  File "/usr/local/lib/python3.10/dist-packages/pandas/io/parsers/readers.py", line 1880, in _make_engine
+    self._engine = self._make_engine(f, self.engine)
+  File "/usr/local/lib/python3.10/dist-packages/pandas/io/parsers/readers.py", line 1880, in _make_engine
+    self._engine = self._make_engine(f, self.engine)
+  File "/usr/local/lib/python3.10/dist-packages/pandas/io/parsers/readers.py", line 1880, in _make_engine
+    self._engine = self._make_engine(f, self.engine)
+  File "/usr/local/lib/python3.10/dist-packages/pandas/io/parsers/readers.py", line 1880, in _make_engine
+    self.handles = get_handle(
+  File "/usr/local/lib/python3.10/dist-packages/pandas/io/common.py", line 873, in get_handle
+    self.handles = get_handle(
+  File "/usr/local/lib/python3.10/dist-packages/pandas/io/common.py", line 873, in get_handle
+    self.handles = get_handle(
+  File "/usr/local/lib/python3.10/dist-packages/pandas/io/common.py", line 873, in get_handle
+    self.handles = get_handle(
+  File "/usr/local/lib/python3.10/dist-packages/pandas/io/common.py", line 873, in get_handle
+    handle = open(
+    handle = open(
+    handle = open(
+    handle = open(
+FileNotFoundErrorFileNotFoundErrorFileNotFoundError: [Errno 2] No such file or directory: '/app/storage/outputdataspo_index.txt'
+: [Errno 2] No such file or directory: '/app/storage/outputdataspo_index.txt': [Errno 2] No such file or directory: '/app/storage/outputdataspo_index.txt'
+
+FileNotFoundError: [Errno 2] No such file or directory: '/app/storage/outputdataspo_index.txt'
+--------------------------------------------------------------------------
+Primary job  terminated normally, but 1 process returned
+a non-zero exit code. Per user-direction, the job has been aborted.
+--------------------------------------------------------------------------
+--------------------------------------------------------------------------
+mpiexec detected that one or more processes exited with non-zero status, thus causing
+the job to be terminated. The first process to do so was:
+
+  Process name: [[63031,1],3]
+  Exit code:    1
+--------------------------------------------------------------------------

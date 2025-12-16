@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { RouterOutlet } from '@angular/router';
 import { FileUploadComponent } from './components/file-upload/file-upload.component';
 import { FragmentationResultsComponent } from './components/fragmentation-results/fragmentation-results.component';
+import { AllocationComponent } from './allocation/allocation.component';
 import { FragmentationService } from './services/fragmentation.service';
 import { FragmentationResult } from './models/fragmentation.model';
 
@@ -13,13 +14,15 @@ import { FragmentationResult } from './models/fragmentation.model';
     CommonModule,
     RouterOutlet,
     FileUploadComponent,
-    FragmentationResultsComponent
+    FragmentationResultsComponent,
+    AllocationComponent
   ],
   templateUrl: './app.component.html',
   styleUrl: './app.component.scss'
 })
 export class AppComponent {
   title = 'PQDAG - Fragmentation GUI';
+  currentView: 'fragmentation' | 'allocation' = 'fragmentation';
   fragmentationResult: FragmentationResult | null = null;
   isProcessing = false;
   errorMessage = '';

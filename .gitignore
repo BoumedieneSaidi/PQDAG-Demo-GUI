@@ -2,14 +2,36 @@
 storage/rawdata/*
 storage/bindata/*
 storage/outputdata/*
+storage/allocation_results/*
+storage/allocation_temp/*
 
 # Keep the directories themselves
 !storage/rawdata/.gitkeep
 !storage/bindata/.gitkeep
 !storage/outputdata/.gitkeep
+!storage/allocation_results/.gitkeep
+!storage/allocation_temp/.gitkeep
 
 # Maven build artifacts
 backend/api/target/
 
 # Test datasets
 test-dataset.nt
+
+# Sensitive files - SSH and cluster configuration
+backend/allocation/workers
+backend/allocation/master
+backend/allocation/config_runtime.yaml
+ssh_config_cluster
+setup-ssh-cluster.sh
+
+# SSH keys and credentials
+*.pem
+*.key
+*_rsa
+*_rsa.pub
+.ssh/
+
+# Spring Boot logs
+backend/api/*.log
+/tmp/spring-boot.log

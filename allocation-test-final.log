@@ -1,0 +1,22 @@
+==========================================
+Test Allocation - watdiv100k
+==========================================
+
+[0;32m✅ 918 fragments détectés[0m
+
+[1;33m=== ÉTAPE 1: Calcul des statistiques (MPI) ===[0m
+Commande: mpiexec -n 4 python3 stat_MPI.py
+
+hwloc/linux: Ignoring PCI device with non-16bit domain.
+Pass --enable-32bits-pci-domain to configure to support such devices
+(warning: it would break the library ABI, don't enable unless really needed).
+Start Working in rank :  0
+Start Working in rank :  2
+Start Working in rank :  1
+Start Working in rank :  3
+0 took:  5.395325660705566  seconds
+2 took:  5.720724821090698  seconds
+3 took:  5.8405396938323975  seconds
+1 took:  5.877874851226807  seconds
+Gathering took:  5.8894264698028564  seconds
+[0;31m❌ ÉCHEC ÉTAPE 1[0m

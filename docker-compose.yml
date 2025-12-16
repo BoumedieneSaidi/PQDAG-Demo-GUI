@@ -1,0 +1,67 @@
+version: '3.8'
+
+services:
+  # Backend API (Spring Boot)
+  api:
+    build:
+      context: ./backend/api
+      dockerfile: Dockerfile
+    container_name: pqdag-api
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./storage:/app/storage
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+      - STORAGE_PATH=/app/storage
+    networks:
+      - pqdag-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # Allocation Service (Python + MPI)
+  allocation:
+    build:
+      context: ./backend/allocation
+      dockerfile: Dockerfile
+    container_name: pqdag-allocation
+    volumes:
+      - ./storage:/app/storage
+      - ./backend/allocation:/app/allocation
+      - ~/.ssh:/home/pqdag/.ssh:ro  # SSH keys for cluster access
+    environment:
+      - WORKSPACE_ROOT=/app
+      - PYTHONUNBUFFERED=1
+    networks:
+      - pqdag-network
+    stdin_open: true
+    tty: true
+    # Keep container running for on-demand execution
+    command: tail -f /dev/null
+
+  # Frontend (Angular)
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: pqdag-frontend
+    ports:
+      - "4200:80"
+    depends_on:
+      - api
+    networks:
+      - pqdag-network
+    restart: unless-stopped
+
+networks:
+  pqdag-network:
+    driver: bridge
+
+volumes:
+  storage:
+    driver: local

@@ -28,9 +28,42 @@
   }
 
   .subtitle {
-    margin: 0.5rem 0 0 0;
+    margin: 0.5rem 0 1.5rem 0;
     color: #666;
     font-size: 1.1rem;
+  }
+}
+
+.nav-tabs {
+  display: flex;
+  justify-content: center;
+  gap: 1rem;
+  margin-top: 1.5rem;
+
+  .nav-tab {
+    padding: 0.75rem 2rem;
+    border: 2px solid #e0e0e0;
+    background: white;
+    color: #666;
+    font-size: 1rem;
+    font-weight: 600;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+
+    &:hover {
+      border-color: #667eea;
+      color: #667eea;
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(102, 126, 234, 0.2);
+    }
+
+    &.active {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      border-color: transparent;
+      box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+    }
   }
 }
 

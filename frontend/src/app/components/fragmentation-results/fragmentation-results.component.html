@@ -98,5 +98,14 @@
         <div class="progress-fill reencoding" [style.width.%]="getPhasePercentage(result.reencodingTime)"></div>
       </div>
     </div>
+
+    <!-- Next Step: Allocation -->
+    <div class="next-step-section">
+      <h3>🎯 Next Step: Fragment Allocation</h3>
+      <p>The fragments have been generated. Now you can allocate them across cluster nodes for optimal distribution.</p>
+      <button class="btn-allocation" (click)="navigateToAllocation()">
+        🚀 Start Allocation & Distribution
+      </button>
+    </div>
   </div>
 </div>
