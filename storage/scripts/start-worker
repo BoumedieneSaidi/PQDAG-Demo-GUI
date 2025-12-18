@@ -1,0 +1,6 @@
+#!/usr/bin/python3
+# Usage ./start-worker qdag_instalation_folder
+import sys, os
+
+folder = sys.argv[1]
+os.system("java -Djava.library.path=%s/solibs/ -jar %s/jars/worker.jar > %s/logs/pqdag.worker.log 2>&1 & echo $!>%s/worker.pid" %(folder,folder,folder,folder))

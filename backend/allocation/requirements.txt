@@ -1,0 +1,16 @@
+# Python dependencies for PQDAG Allocation System
+
+# YAML configuration parsing
+PyYAML>=6.0
+
+# Data manipulation (required by stat_MPI.py)
+pandas>=2.0.0
+
+# MPI for parallel statistics computation (stat_MPI.py)
+mpi4py>=3.1.0
+
+# METIS graph partitioning (weighted_metis.py)
+# Note: pymetis requires METIS library to be installed on system
+# Install METIS first: sudo apt-get install libmetis-dev (Ubuntu/Debian)
+# or: brew install metis (macOS)
+pymetis>=2023.1

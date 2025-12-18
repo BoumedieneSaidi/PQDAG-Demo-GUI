@@ -1,0 +1,5 @@
+Host *
+    User ubuntu
+    IdentityFile /root/.ssh/pqdag
+    StrictHostKeyChecking no
+    UserKnownHostsFile /root/.ssh/known_hosts

@@ -1,0 +1,34 @@
+version: '3.8'
+
+services:
+  api:
+    ports:
+      - "8080:8080"
+    volumes:
+      - /home/ubuntu/mounted_vol/pqdag-gui/storage:/app/storage
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ~/.ssh:/root/.ssh:ro
+    environment:
+      - WORKSPACE_ROOT=/app
+      - STORAGE_PATH=/app/storage
+      - APP_STORAGE_BASE_PATH=/app/storage
+      - APP_STORAGE_RAWDATA_PATH=/app/storage/rawdata
+      - APP_STORAGE_BINDATA_PATH=/app/storage/bindata
+      - APP_STORAGE_OUTPUTDATA_PATH=/app/storage/outputdata
+      - HOST_STORAGE_PATH=/home/ubuntu/mounted_vol/pqdag-gui/storage
+    restart: always
+
+  allocation:
+    volumes:
+      - /home/ubuntu/mounted_vol/pqdag-gui/storage:/app/storage
+      - /home/ubuntu/mounted_vol/pqdag-gui/backend/allocation:/app/allocation
+      - ~/.ssh:/home/pqdag/.ssh:ro
+    environment:
+      - STORAGE_PATH=/app/storage
+      - SSH_AUTH_SOCK=/ssh-agent
+    restart: always
+
+  frontend:
+    ports:
+      - "80:80"
+    restart: always

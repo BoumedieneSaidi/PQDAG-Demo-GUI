@@ -1,0 +1,111 @@
+<div class="results-container" *ngIf="result">
+  <!-- Status Header -->
+  <div class="status-header" [class.success]="result.success" [class.error]="!result.success">
+    <h2>{{ result.success ? '✓ Fragmentation Completed' : '✗ Fragmentation Failed' }}</h2>
+    <p>{{ result.message }}</p>
+  </div>
+
+  <div class="results-grid" *ngIf="result.success">
+    <!-- Key Metrics -->
+    <div class="metric-card highlight">
+      <div class="metric-icon">📊</div>
+      <div class="metric-content">
+        <div class="metric-value">{{ formatNumber(result.fragmentCount) }}</div>
+        <div class="metric-label">Fragments Generated</div>
+      </div>
+    </div>
+
+    <div class="metric-card highlight">
+      <div class="metric-icon">📝</div>
+      <div class="metric-content">
+        <div class="metric-value">{{ formatNumber(result.totalTriples) }}</div>
+        <div class="metric-label">Total Triples</div>
+      </div>
+    </div>
+
+    <div class="metric-card highlight">
+      <div class="metric-icon">⚡</div>
+      <div class="metric-content">
+        <div class="metric-value">{{ formatTime(result.executionTimeSeconds) }}</div>
+        <div class="metric-label">Execution Time</div>
+      </div>
+    </div>
+
+    <div class="metric-card highlight">
+      <div class="metric-icon">🚀</div>
+      <div class="metric-content">
+        <div class="metric-value">{{ formatNumber(result.throughput) }}</div>
+        <div class="metric-label">Triples/Second</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Phase Breakdown -->
+  <div class="phase-breakdown" *ngIf="result.success">
+    <h3>Phase Breakdown</h3>
+    
+    <div class="phase-item" *ngIf="result.encodingTime">
+      <div class="phase-header">
+        <span class="phase-name">Data Encoding</span>
+        <span class="phase-time">{{ formatTime(result.encodingTime) }}</span>
+        <span class="phase-percent">{{ getPhasePercentage(result.encodingTime).toFixed(1) }}%</span>
+      </div>
+      <div class="progress-bar">
+        <div class="progress-fill encoding" [style.width.%]="getPhasePercentage(result.encodingTime)"></div>
+      </div>
+    </div>
+
+    <div class="phase-item" *ngIf="result.dictionariesTime">
+      <div class="phase-header">
+        <span class="phase-name">Dictionaries</span>
+        <span class="phase-time">{{ formatTime(result.dictionariesTime) }}</span>
+        <span class="phase-percent">{{ getPhasePercentage(result.dictionariesTime).toFixed(1) }}%</span>
+      </div>
+      <div class="progress-bar">
+        <div class="progress-fill dictionaries" [style.width.%]="getPhasePercentage(result.dictionariesTime)"></div>
+      </div>
+    </div>
+
+    <div class="phase-item" *ngIf="result.sortingTime">
+      <div class="phase-header">
+        <span class="phase-name">Sorting (SPO+OPS)</span>
+        <span class="phase-time">{{ formatTime(result.sortingTime) }}</span>
+        <span class="phase-percent">{{ getPhasePercentage(result.sortingTime).toFixed(1) }}%</span>
+      </div>
+      <div class="progress-bar">
+        <div class="progress-fill sorting" [style.width.%]="getPhasePercentage(result.sortingTime)"></div>
+      </div>
+    </div>
+
+    <div class="phase-item" *ngIf="result.fragmentationTime">
+      <div class="phase-header">
+        <span class="phase-name">Fragmentation</span>
+        <span class="phase-time">{{ formatTime(result.fragmentationTime) }}</span>
+        <span class="phase-percent">{{ getPhasePercentage(result.fragmentationTime).toFixed(1) }}%</span>
+      </div>
+      <div class="progress-bar">
+        <div class="progress-fill fragmentation" [style.width.%]="getPhasePercentage(result.fragmentationTime)"></div>
+      </div>
+    </div>
+
+    <div class="phase-item" *ngIf="result.reencodingTime">
+      <div class="phase-header">
+        <span class="phase-name">Re-encoding</span>
+        <span class="phase-time">{{ formatTime(result.reencodingTime) }}</span>
+        <span class="phase-percent">{{ getPhasePercentage(result.reencodingTime).toFixed(1) }}%</span>
+      </div>
+      <div class="progress-bar">
+        <div class="progress-fill reencoding" [style.width.%]="getPhasePercentage(result.reencodingTime)"></div>
+      </div>
+    </div>
+
+    <!-- Next Step: Allocation -->
+    <div class="next-step-section">
+      <h3>🎯 Next Step: Fragment Allocation</h3>
+      <p>The fragments have been generated. Now you can allocate them across cluster nodes for optimal distribution.</p>
+      <button class="btn-allocation" (click)="navigateToAllocation()">
+        🚀 Start Allocation & Distribution
+      </button>
+    </div>
+  </div>
+</div>

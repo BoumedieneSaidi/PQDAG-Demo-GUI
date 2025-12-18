@@ -1,0 +1,192 @@
+<div class="query-container">
+  <h1>PQDAG Query Execution</h1>
+
+  <!-- Message Display -->
+  <div *ngIf="message" class="message" [ngClass]="'message-' + messageType">
+    {{ message }}
+  </div>
+
+  <!-- PQDAG Dataset Selection -->
+  <div class="card">
+    <h2>PQDAG Dataset Configuration</h2>
+    <div class="form-group">
+      <label>Current Dataset:</label>
+      <span class="current-dataset">{{ currentDataset || 'Loading...' }}</span>
+    </div>
+    <div class="form-group">
+      <label for="pqdag-dataset">Select Dataset:</label>
+      <select 
+        id="pqdag-dataset" 
+        [(ngModel)]="selectedPqdagDataset" 
+        class="form-control">
+        <option *ngFor="let dataset of pqdagDatasets" [value]="dataset">
+          {{ dataset }}
+        </option>
+      </select>
+      <button 
+        (click)="changeDataset()" 
+        [disabled]="clusterLoading || !selectedPqdagDataset || selectedPqdagDataset === currentDataset"
+        class="btn btn-primary">
+        <span *ngIf="clusterLoading">Changing...</span>
+        <span *ngIf="!clusterLoading">Change Dataset</span>
+      </button>
+    </div>
+    <p class="help-text">⚠️ Changing the dataset requires cluster restart to take effect</p>
+  </div>
+
+  <!-- Cluster Management -->
+  <div class="card">
+    <h2>Cluster Management</h2>
+    <div class="cluster-status">
+      <span class="status-label">Status:</span>
+      <span class="status-badge" [ngClass]="'status-' + clusterStatus">
+        {{ clusterStatus }}
+      </span>
+    </div>
+    <div class="button-group">
+      <button 
+        (click)="startCluster()" 
+        [disabled]="clusterLoading || clusterStatus === 'running'"
+        class="btn btn-success">
+        <span *ngIf="clusterLoading && clusterStatus === 'starting'">Starting...</span>
+        <span *ngIf="!(clusterLoading && clusterStatus === 'starting')">▶ Start Cluster</span>
+      </button>
+      <button 
+        (click)="stopCluster()" 
+        [disabled]="clusterLoading || clusterStatus === 'stopped'"
+        class="btn btn-danger">
+        <span *ngIf="clusterLoading && clusterStatus === 'stopping'">Stopping...</span>
+        <span *ngIf="!(clusterLoading && clusterStatus === 'stopping')">⏹ Stop Cluster</span>
+      </button>
+      <button 
+        (click)="restartCluster()" 
+        [disabled]="clusterLoading"
+        class="btn btn-warning">
+        <span *ngIf="clusterLoading && clusterStatus === 'restarting'">Restarting...</span>
+        <span *ngIf="!(clusterLoading && clusterStatus === 'restarting')">🔄 Restart Cluster</span>
+      </button>
+      <button 
+        (click)="clearJavaProcesses()" 
+        [disabled]="clusterLoading"
+        class="btn btn-secondary">
+        <span *ngIf="clusterLoading">Clearing...</span>
+        <span *ngIf="!clusterLoading">🧹 Clear Java Processes</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- Query Execution -->
+  <div class="card">
+    <h2>Query Execution</h2>
+    
+    <div class="form-group">
+      <label for="query-dataset">Query Dataset:</label>
+      <select 
+        id="query-dataset" 
+        [(ngModel)]="selectedQueryDataset" 
+        (change)="onQueryDatasetChange()"
+        class="form-control">
+        <option *ngFor="let dataset of queryDatasets" [value]="dataset">
+          {{ dataset }}
+        </option>
+      </select>
+    </div>
+
+    <div class="form-group">
+      <label for="query-file">Query File:</label>
+      <select 
+        id="query-file" 
+        [(ngModel)]="selectedQueryFile"
+        (change)="onQueryFileChange()"
+        class="form-control">
+        <option *ngFor="let file of queryFiles" [value]="file">
+          {{ file }}
+        </option>
+      </select>
+    </div>
+
+    <!-- Query Content Display -->
+    <div *ngIf="queryContent" class="query-content-section">
+      <label>Query Content:</label>
+      <pre class="query-content">{{ queryContent }}</pre>
+    </div>
+
+    <!-- Advanced Options -->
+    <div class="advanced-toggle">
+      <button (click)="toggleAdvanced()" class="btn btn-link">
+        <span *ngIf="!showAdvanced">▶ Show Advanced Options</span>
+        <span *ngIf="showAdvanced">▼ Hide Advanced Options</span>
+      </button>
+    </div>
+
+    <div *ngIf="showAdvanced" class="advanced-options">
+      <div class="form-group">
+        <label for="master-ip">Master IP:</label>
+        <input 
+          type="text" 
+          id="master-ip" 
+          [(ngModel)]="masterIp" 
+          class="form-control"
+          placeholder="192.168.165.27">
+      </div>
+      <div class="form-group">
+        <label for="plan-number">Plan Number:</label>
+        <input 
+          type="number" 
+          id="plan-number" 
+          [(ngModel)]="planNumber" 
+          class="form-control"
+          min="0">
+      </div>
+    </div>
+
+    <button 
+      (click)="executeQuery()" 
+      [disabled]="queryLoading || !selectedQueryFile"
+      class="btn btn-primary btn-execute">
+      <span *ngIf="queryLoading">Executing...</span>
+      <span *ngIf="!queryLoading">Execute Query</span>
+    </button>
+  </div>
+
+  <!-- Query Results -->
+  <div *ngIf="queryResult" class="card results-card">
+    <h2>Query Results</h2>
+    
+    <div class="result-summary">
+      <div class="result-item">
+        <span class="label">Status:</span>
+        <span class="value" [ngClass]="'status-' + queryResult.status">
+          {{ queryResult.status }}
+        </span>
+      </div>
+      <div class="result-item" *ngIf="queryResult.executionTimeMs">
+        <span class="label">Execution Time:</span>
+        <span class="value">{{ queryResult.executionTimeMs }} ms</span>
+      </div>
+      <div class="result-item" *ngIf="queryResult.resultCount !== undefined">
+        <span class="label">Result Count:</span>
+        <span class="value">{{ queryResult.resultCount }}</span>
+      </div>
+    </div>
+
+    <div *ngIf="queryResult.message" class="result-message">
+      <strong>Message:</strong> {{ queryResult.message }}
+    </div>
+
+    <div *ngIf="queryResult.results && queryResult.results.length > 0" class="results-list">
+      <h3>Results:</h3>
+      <div class="result-items">
+        <div *ngFor="let result of queryResult.results; let i = index" class="result-row">
+          <span class="result-index">{{ i + 1 }}.</span>
+          <span class="result-content">{{ result }}</span>
+        </div>
+      </div>
+    </div>
+
+    <div *ngIf="queryResult.output" class="output-section">
+      <h3>Output:</h3>
+      <pre class="output-content">{{ queryResult.output }}</pre>
+    </div>
+  </div>
+</div>

@@ -1,0 +1,6 @@
+#!/usr/bin/python3
+# Usage ./stop-worker qdag_instalation_folder
+
+import sys, os
+folder = sys.argv[1]
+os.system("kill $(cat %s/worker.pid) " %(folder))

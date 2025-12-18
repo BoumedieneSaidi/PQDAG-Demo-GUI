@@ -1,0 +1,23 @@
+#!/usr/bin/python3
+# Usage ./start-all qdag_instalation_folder
+
+import sys, os
+
+folder = sys.argv[1]
+workersfile = "workers"
+masterFile = "master"
+ssh_key = os.path.expanduser("~/.ssh/pqdag")
+ssh_opts = "-i %s -o StrictHostKeyChecking=no" % ssh_key
+
+master = open(masterFile,'r').readlines()[0].strip()
+java_path = "/opt/jdk-11/bin/java"
+#os.system(f"ssh {master} '{java_path} -jar {folder}/start-master.jar {folder}'")
+os.system("ssh %s %s 'source ~/.profile; python3 %s/start-master %s'" %(ssh_opts, master,folder,folder))
+#os.system(f"ssh {master} 'bash -c \"source ~/.profile; python3 {folder}/start-master {folder}\"'")
+
+workers = open(workersfile,'r').readlines()
+for i in workers:
+   node = i.strip()
+   os.system("ssh %s %s 'source ~/.profile; python3 %s/start-worker %s'" %(ssh_opts, node,folder,folder))
+
+print("Workers and Master Started !")

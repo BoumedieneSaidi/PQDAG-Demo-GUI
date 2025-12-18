@@ -1,0 +1,389 @@
+.query-container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 20px;
+
+  h1 {
+    color: #333;
+    margin-bottom: 30px;
+    font-size: 28px;
+  }
+
+  h2 {
+    color: #555;
+    font-size: 20px;
+    margin-bottom: 20px;
+    border-bottom: 2px solid #007bff;
+    padding-bottom: 10px;
+  }
+
+  h3 {
+    color: #666;
+    font-size: 16px;
+    margin-top: 20px;
+    margin-bottom: 10px;
+  }
+}
+
+.card {
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  padding: 20px;
+  margin-bottom: 20px;
+}
+
+.message {
+  padding: 12px 20px;
+  border-radius: 4px;
+  margin-bottom: 20px;
+  font-weight: 500;
+
+  &.message-success {
+    background-color: #d4edda;
+    color: #155724;
+    border: 1px solid #c3e6cb;
+  }
+
+  &.message-error {
+    background-color: #f8d7da;
+    color: #721c24;
+    border: 1px solid #f5c6cb;
+  }
+
+  &.message-info {
+    background-color: #d1ecf1;
+    color: #0c5460;
+    border: 1px solid #bee5eb;
+  }
+}
+
+.form-group {
+  margin-bottom: 20px;
+
+  label {
+    display: block;
+    font-weight: 600;
+    margin-bottom: 8px;
+    color: #555;
+  }
+
+  .current-dataset {
+    display: inline-block;
+    background: #e9ecef;
+    padding: 8px 16px;
+    border-radius: 4px;
+    font-family: 'Courier New', monospace;
+    font-weight: 600;
+    color: #007bff;
+  }
+}
+
+.form-control {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid #ced4da;
+  border-radius: 4px;
+  font-size: 14px;
+  transition: border-color 0.2s;
+
+  &:focus {
+    outline: none;
+    border-color: #007bff;
+    box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+  }
+}
+
+select.form-control {
+  cursor: pointer;
+  background-color: white;
+}
+
+.query-content-section {
+  margin-top: 20px;
+  margin-bottom: 20px;
+
+  label {
+    display: block;
+    font-weight: 600;
+    margin-bottom: 8px;
+    color: #555;
+  }
+
+  .query-content {
+    background: #f8f9fa;
+    border: 1px solid #dee2e6;
+    border-radius: 4px;
+    padding: 15px;
+    font-family: 'Courier New', Courier, monospace;
+    font-size: 13px;
+    line-height: 1.6;
+    color: #212529;
+    max-height: 300px;
+    overflow-y: auto;
+    white-space: pre-wrap;
+    word-wrap: break-word;
+  }
+}
+
+.help-text {
+  margin-top: 10px;
+  font-size: 13px;
+  color: #856404;
+  background-color: #fff3cd;
+  border: 1px solid #ffeaa7;
+  padding: 8px 12px;
+  border-radius: 4px;
+}
+
+.cluster-status {
+  margin-bottom: 20px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+
+  .status-label {
+    font-weight: 600;
+    color: #555;
+  }
+
+  .status-badge {
+    padding: 6px 16px;
+    border-radius: 20px;
+    font-weight: 600;
+    font-size: 14px;
+    text-transform: uppercase;
+
+    &.status-running {
+      background-color: #d4edda;
+      color: #155724;
+    }
+
+    &.status-stopped {
+      background-color: #f8d7da;
+      color: #721c24;
+    }
+
+    &.status-starting,
+    &.status-stopping,
+    &.status-restarting {
+      background-color: #fff3cd;
+      color: #856404;
+    }
+
+    &.status-unknown,
+    &.status-error {
+      background-color: #f8d7da;
+      color: #721c24;
+    }
+  }
+}
+
+.button-group {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.btn {
+  padding: 10px 20px;
+  border: none;
+  border-radius: 4px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+
+  &.btn-primary {
+    background-color: #007bff;
+    color: white;
+
+    &:hover:not(:disabled) {
+      background-color: #0056b3;
+    }
+  }
+
+  &.btn-success {
+    background-color: #28a745;
+    color: white;
+
+    &:hover:not(:disabled) {
+      background-color: #218838;
+    }
+  }
+
+  &.btn-danger {
+    background-color: #dc3545;
+    color: white;
+
+    &:hover:not(:disabled) {
+      background-color: #c82333;
+    }
+  }
+
+  &.btn-warning {
+    background-color: #ffc107;
+    color: #212529;
+
+    &:hover:not(:disabled) {
+      background-color: #e0a800;
+    }
+  }
+
+  &.btn-secondary {
+    background-color: #6c757d;
+    color: white;
+
+    &:hover:not(:disabled) {
+      background-color: #5a6268;
+    }
+  }
+
+  &.btn-link {
+    background: none;
+    color: #007bff;
+    padding: 0;
+    text-decoration: none;
+
+    &:hover {
+      text-decoration: underline;
+    }
+  }
+
+  &.btn-execute {
+    width: 100%;
+    margin-top: 10px;
+    padding: 12px;
+    font-size: 16px;
+  }
+}
+
+.advanced-toggle {
+  margin: 15px 0;
+}
+
+.advanced-options {
+  background-color: #f8f9fa;
+  padding: 20px;
+  border-radius: 4px;
+  margin-bottom: 20px;
+}
+
+.results-card {
+  background-color: #f8f9fa;
+}
+
+.result-summary {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 15px;
+  margin-bottom: 20px;
+}
+
+.result-item {
+  background: white;
+  padding: 12px;
+  border-radius: 4px;
+  border-left: 4px solid #007bff;
+
+  .label {
+    display: block;
+    font-size: 12px;
+    color: #666;
+    margin-bottom: 4px;
+    text-transform: uppercase;
+  }
+
+  .value {
+    font-size: 18px;
+    font-weight: 600;
+    color: #333;
+
+    &.status-success {
+      color: #28a745;
+    }
+
+    &.status-error {
+      color: #dc3545;
+    }
+  }
+}
+
+.result-message {
+  background: white;
+  padding: 12px;
+  border-radius: 4px;
+  margin-bottom: 20px;
+
+  strong {
+    color: #555;
+  }
+}
+
+.results-list {
+  background: white;
+  padding: 15px;
+  border-radius: 4px;
+  margin-bottom: 20px;
+
+  h3 {
+    margin-top: 0;
+  }
+}
+
+.result-items {
+  max-height: 400px;
+  overflow-y: auto;
+}
+
+.result-row {
+  padding: 8px;
+  border-bottom: 1px solid #e9ecef;
+  display: flex;
+  gap: 10px;
+
+  &:last-child {
+    border-bottom: none;
+  }
+
+  .result-index {
+    color: #999;
+    min-width: 30px;
+  }
+
+  .result-content {
+    flex: 1;
+    word-break: break-all;
+    font-family: 'Courier New', monospace;
+    font-size: 13px;
+  }
+}
+
+.output-section {
+  background: white;
+  padding: 15px;
+  border-radius: 4px;
+
+  h3 {
+    margin-top: 0;
+  }
+}
+
+.output-content {
+  background-color: #f8f9fa;
+  border: 1px solid #dee2e6;
+  border-radius: 4px;
+  padding: 15px;
+  font-family: 'Courier New', monospace;
+  font-size: 12px;
+  line-height: 1.5;
+  max-height: 400px;
+  overflow-y: auto;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+}
