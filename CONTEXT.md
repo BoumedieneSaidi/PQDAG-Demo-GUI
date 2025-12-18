@@ -11,9 +11,10 @@
 ## About PQDAG
 PQDAG is a distributed RDF database system for managing and querying large-scale RDF data through fragmentation and distribution.
 
-## Current Status (Dec 16, 2025)
+## Current Status (Dec 18, 2025)
 - ✅ **Phase 1**: Fragmentation - COMPLETED & TESTED via Web Interface
 - ✅ **Phase 2**: Allocation & Distribution - COMPLETED & TESTED via Web Interface
+- ✅ **Phase 3**: Query Execution - COMPLETED & TESTED via Web Interface
 - ✅ Deployed to cluster master node (192.168.165.27)
 - ✅ Docker Compose deployment working
 - ✅ SSH tunnel configured for remote access
@@ -22,7 +23,8 @@ PQDAG is a distributed RDF database system for managing and querying large-scale
 - ✅ **Fragmentation GUI WORKING** - Full workflow tested successfully
 - ✅ **Allocation GUI WORKING** - METIS partitioning functional
 - ✅ **Distribution WORKING** - SSH transfer to workers successful
-- 🎯 **COMPLETE PIPELINE FUNCTIONAL** - Upload → Fragment → Allocate → Distribute
+- ✅ **Query Execution WORKING** - Dataset management, cluster control, query execution with auto-restart
+- 🎯 **COMPLETE PIPELINE FUNCTIONAL** - Upload → Fragment → Allocate → Distribute → Query Execution
 
 ## Deployment Information
 
@@ -77,10 +79,13 @@ Host pqdag-master
 12. ✅ **Config template path errors** - Fixed paths for Docker environment
 13. ✅ **SSH hostname resolution** - Changed from SSH aliases to direct IP addresses
 14. ✅ **Distribution timeout** - Fixed SSH commands to use IPs, increased nginx timeout
-6. ✅ **CORS 403 error** - Fixed API URL to use relative path `/api`
-7. ✅ **413 Request Too Large** - Added `client_max_body_size 2048M` to nginx
-8. ✅ **Docker not found in container** - Mounted Docker socket and installed Docker CLI
-9. ✅ **0 fragments generated** - Fixed host path mapping for Docker-in-Docker volumes
+15. ✅ **Query execution on wrong machine** - Changed from master to client (192.168.165.191)
+16. ✅ **Java command not found** - Used full path `/opt/jdk-11/bin/java`
+17. ✅ **Port conflicts from orphaned processes** - Added process cleanup before query execution
+18. ✅ **SSH warnings in JSON** - Added SSH options to suppress warnings
+19. ✅ **Need for cold execution** - Implemented async cluster restart after queries
+20. ✅ **Duplicate cluster launches** - Created aggressive clear Java processes feature
+21. ✅ **Status not updated after clear** - Clear button now sets status to 'stopped'
 
 ## Upload Issue - RESOLVED ✅
 
@@ -1043,9 +1048,217 @@ docker-compose logs --tail=100 api
 ```
 
 ## Next Steps After Upload Fix
-1. Test complete fragmentation workflow
-2. Test allocation workflow
-3. Test distribution to workers
-4. Monitor cluster performance
-5. Document any remaining issues
+1. ✅ Test complete fragmentation workflow
+2. ✅ Test allocation workflow
+3. ✅ Test distribution to workers
+4. ✅ Test query execution workflow
+5. Monitor cluster performance
+6. Document any remaining issues
+
+---
+
+## Phase 3: Query Execution System - December 18, 2025 ✅
+
+### Overview
+Complete query execution system with dataset management, cluster lifecycle control, and automated cold query execution.
+
+### Architecture
+
+#### Client Machine Configuration
+- **IP Address**: 192.168.165.191 (part of PQDAG cluster, no jump host needed)
+- **Java Installation**: `/opt/jdk-11/bin/java`
+- **Client JAR**: `/home/ubuntu/client.jar`
+- **Query Files**: `/home/ubuntu/queries/{dataset}/` (e.g., `/home/ubuntu/queries/watdiv/C2.in`)
+- **SSH Access**: Password-less via `~/.ssh/pqdag` key
+
+#### Cluster Nodes
+- **Master**: 192.168.165.27
+- **Workers**: 10 nodes (IPs listed in `/app/storage/scripts/workers`)
+- **Client**: 192.168.165.191 (also acts as query executor)
+
+#### Dataset Configuration
+- **Location**: `/home/ubuntu/pqdag/conf/config.properties`
+- **Parameter**: `DB_DEFAULT`
+- **Available Datasets**: 27 datasets in `/home/ubuntu/mounted_vol/pqdag_data/`
+
+### Features Implemented
+
+#### 1. Dataset Management
+- **List PQDAG Datasets**: Enumerate all available datasets (27 total)
+- **Get Current Dataset**: Read `DB_DEFAULT` from master's config.properties
+- **Set Dataset**: Update `DB_DEFAULT` on master + all 10 workers via SSH
+- **Endpoints**:
+  - `GET /api/query/pqdag-datasets`
+  - `GET /api/query/current-dataset`
+  - `POST /api/query/set-dataset/{dataset}`
+
+#### 2. Cluster Management
+- **Start Cluster**: Execute `/app/storage/scripts/start-all` on master
+- **Stop Cluster**: Execute `/app/storage/scripts/stop-all` on master
+- **Restart Cluster**: Stop then start with delay
+- **Clear Java Processes**: Kill all `java -jar` processes on client + master + 10 workers
+- **Endpoints**:
+  - `POST /api/query/start-cluster`
+  - `POST /api/query/stop-cluster`
+  - `POST /api/query/restart-cluster`
+  - `POST /api/query/clear-java-processes`
+
+#### 3. Query Management
+- **List Query Datasets**: Available query datasets (watdiv, lubm, etc.)
+- **List Query Files**: Files for each dataset
+- **Get Query Content**: Read query file from client machine via SSH
+- **Endpoints**:
+  - `GET /api/query/datasets`
+  - `GET /api/query/files/{dataset}`
+  - `GET /api/query/content/{dataset}/{file}`
+
+#### 4. Query Execution
+- **Execution Flow**:
+  1. Kill existing Java processes on client machine (prevent port conflicts)
+  2. Execute query via SSH: `/opt/jdk-11/bin/java -jar /home/ubuntu/client.jar {masterIp} {planNumber} < {queryFile}`
+  3. Parse execution time and result count from output
+  4. Schedule async cluster restart (2 second delay) for cold execution
+- **Endpoint**: `POST /api/query/execute`
+- **Parameters**: dataset, queryFile, masterIp, planNumber
+- **Response**: status, executionTimeMs, resultCount, output
+
+#### 5. Process Cleanup
+- **Purpose**: Handle duplicate cluster launches that leave orphaned processes
+- **Implementation**: `pkill -9 -f 'java -jar'` on all nodes
+- **Nodes**: Client (192.168.165.191) + Master (192.168.165.27) + 10 Workers
+- **Wait Time**: 3 seconds after cleanup for port release
+- **Use Case**: When cluster accidentally started twice, stop-all only kills known PIDs, leaving orphans
+
+### Backend Implementation
+
+#### QueryService.java
+Key methods:
+- `executeQuery()`: Process cleanup, query execution, auto-restart scheduling
+- `clearJavaProcesses()`: Aggressive cleanup on all cluster nodes
+- `startCluster()`, `stopCluster()`, `restartCluster()`: Cluster lifecycle
+- `getPqdagDatasets()`: List datasets from pqdag_data directory
+- `getCurrentDataset()`: Read DB_DEFAULT from config.properties
+- `setDataset()`: Update config.properties on all nodes
+- `getQueryContent()`: Read query file from client machine
+
+Configuration:
+```java
+private static final String CLIENT_MACHINE_IP = "192.168.165.191";
+private static final String CLIENT_JAR_PATH = "/home/ubuntu/client.jar";
+private static final String CLIENT_QUERIES_PATH = "/home/ubuntu/queries";
+private static final String PQDAG_INSTALLATION_PATH = "/home/ubuntu/pqdag";
+private static final String JAVA_PATH = "/opt/jdk-11/bin/java";
+```
+
+SSH Commands:
+```bash
+# Query execution
+/opt/jdk-11/bin/java -jar /home/ubuntu/client.jar {masterIp} {planNumber} < {queryFile}
+
+# Clear Java processes
+pkill -9 -f 'java -jar' || true
+
+# Dataset change
+sed -i 's/^DB_DEFAULT=.*/DB_DEFAULT={dataset}/' /home/ubuntu/pqdag/conf/config.properties
+```
+
+#### QueryController.java
+REST endpoints for:
+- Dataset management (list, get, set)
+- Cluster control (start, stop, restart, clear)
+- Query operations (list, content, execute)
+
+### Frontend Implementation
+
+#### query.component.ts
+Features:
+- Dataset selection with real-time current dataset display
+- Query file selection with automatic content loading
+- Cluster status tracking (unknown, starting, running, stopping, stopped, restarting)
+- Query execution with loading states
+- Clear Java processes with status update to 'stopped'
+
+State management:
+```typescript
+clusterStatus: string = 'unknown';
+clusterLoading: boolean = false;
+queryLoading: boolean = false;
+```
+
+#### query.component.html
+UI sections:
+1. **Dataset Configuration**: PQDAG dataset selector
+2. **Query Execution**: Dataset, file, content display, plan number
+3. **Cluster Management**: 4 control buttons
+   - ▶ Start Cluster
+   - ⏹ Stop Cluster
+   - 🔄 Restart Cluster
+   - 🧹 Clear Java Processes
+4. **Results Display**: Execution time, result count, output
+
+### Issues Resolved
+
+#### 1. Wrong Execution Machine
+- **Problem**: Initial implementation tried to execute on master node
+- **Solution**: Changed to execute on client machine (192.168.165.191)
+
+#### 2. Java Command Not Found
+- **Problem**: `java` not in PATH on client machine
+- **Solution**: Used full path `/opt/jdk-11/bin/java`
+
+#### 3. Port Conflicts
+- **Problem**: `BindException: Address already in use` from orphaned processes
+- **Solution**: Added `pkill` before query execution to kill existing client.jar
+
+#### 4. SSH Warnings in JSON
+- **Problem**: SSH warnings polluting JSON responses
+- **Solution**: Added SSH options: `LogLevel=ERROR`, `StrictHostKeyChecking=no`, `UserKnownHostsFile=/dev/null`
+
+#### 5. Need for Cold Execution
+- **Problem**: Cached results affecting benchmark accuracy
+- **Solution**: Implemented async cluster restart after query execution (2s delay)
+
+#### 6. Duplicate Cluster Launches
+- **Problem**: Accidentally starting cluster twice leaves orphaned processes
+- **Explanation**: `stop-all` only kills processes it knows about (from PID files)
+- **Solution**: Created clear Java processes feature with aggressive `pkill -9 -f 'java -jar'`
+- **Impact**: Kills ALL java -jar processes (not just specific patterns) on all nodes
+- **Status Update**: Clear button now sets cluster status to 'stopped'
+
+### Testing Results
+✅ **Dataset List**: 27 datasets retrieved from pqdag_data  
+✅ **Current Dataset**: Successfully read watdiv100k from config.properties  
+✅ **Set Dataset**: Changed watdiv100k → lubm100m → watdiv100k on all 11 nodes  
+✅ **Query Content**: Loaded C2.in from client machine  
+✅ **Query Execution**: C2.in executed in 2593ms with 0 results  
+✅ **Auto-restart**: Cluster restarted automatically after query  
+✅ **Clear Processes**: All java -jar processes killed on 12 nodes (client + master + 10 workers)  
+✅ **Status Update**: Cluster status correctly shows 'stopped' after clear  
+
+### Workflow Example
+
+1. **Select Dataset**: Choose watdiv100k from dropdown
+2. **Clear Processes** (if needed): Click 🧹 → Status becomes 'stopped'
+3. **Start Cluster**: Click ▶ → Cluster starts on master + workers
+4. **Select Query**: Choose C2.in, content loads automatically
+5. **Execute Query**: Click "Execute Query" → Query runs on client machine
+6. **Auto-restart**: Cluster automatically restarts after 2 seconds (cold execution)
+7. **View Results**: Execution time and results displayed
+
+### Configuration Files
+
+**QueryService.java** configuration:
+- Client IP: 192.168.165.191
+- Master IP: Read from scripts/master file
+- Worker IPs: Read from scripts/workers file (10 nodes)
+- SSH Key: ~/.ssh/pqdag (password-less access)
+
+**SSH Options** for all commands:
+```bash
+-i /home/pqdag/.ssh/pqdag
+-o StrictHostKeyChecking=no
+-o UserKnownHostsFile=/dev/null
+-o LogLevel=ERROR
+-o ConnectTimeout=10
+```
 
