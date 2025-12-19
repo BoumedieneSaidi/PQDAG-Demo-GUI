@@ -84,7 +84,7 @@ Host pqdag-master
 17. ✅ **Port conflicts from orphaned processes** - Added process cleanup before query execution
 18. ✅ **SSH warnings in JSON** - Added SSH options to suppress warnings
 19. ✅ **Need for cold execution** - Implemented async cluster restart after queries
-20. ✅ **Duplicate cluster launches** - Created aggressive clear Java processes feature
+20. ✅ **Duplicate cluster launches** - Refined clear Java processes to target `client.jar`/`master.jar`/`worker.jar` per node
 21. ✅ **Status not updated after clear** - Clear button now sets status to 'stopped'
 
 ## Upload Issue - RESOLVED ✅
@@ -1096,7 +1096,7 @@ Complete query execution system with dataset management, cluster lifecycle contr
 - **Start Cluster**: Execute `/app/storage/scripts/start-all` on master
 - **Stop Cluster**: Execute `/app/storage/scripts/stop-all` on master
 - **Restart Cluster**: Stop then start with delay
-- **Clear Java Processes**: Kill all `java -jar` processes on client + master + 10 workers
+- **Clear Java Processes**: Kill node-specific JARs (client.jar on client, master.jar on master, worker.jar on workers)
 - **Endpoints**:
   - `POST /api/query/start-cluster`
   - `POST /api/query/stop-cluster`
@@ -1156,7 +1156,12 @@ SSH Commands:
 /opt/jdk-11/bin/java -jar /home/ubuntu/client.jar {masterIp} {planNumber} < {queryFile}
 
 # Clear Java processes
-pkill -9 -f 'java -jar' || true
+pkill -9 -f 'client.jar' || true
+# Master: kill master.jar only
+pkill -9 -f 'master.jar' || true
+# Workers: kill worker.jar only
+pkill -9 -f 'worker.jar' || true
+
 
 # Dataset change
 sed -i 's/^DB_DEFAULT=.*/DB_DEFAULT={dataset}/' /home/ubuntu/pqdag/conf/config.properties
@@ -1221,8 +1226,11 @@ UI sections:
 #### 6. Duplicate Cluster Launches
 - **Problem**: Accidentally starting cluster twice leaves orphaned processes
 - **Explanation**: `stop-all` only kills processes it knows about (from PID files)
-- **Solution**: Created clear Java processes feature with aggressive `pkill -9 -f 'java -jar'`
-- **Impact**: Kills ALL java -jar processes (not just specific patterns) on all nodes
+- **Solution**: Implemented targeted clear Java processes that kill specific JARs per node:
+  - Client: `pkill -9 -f 'client.jar'` (on the client machine)
+  - Master: `pkill -9 -f 'master.jar'` (on the master node)
+  - Workers: `pkill -9 -f 'worker.jar'` (on each worker)
+- **Impact**: More precise cleanup; reduces collateral killing and avoids removing unrelated java processes
 - **Status Update**: Clear button now sets cluster status to 'stopped'
 
 ### Testing Results
@@ -1232,7 +1240,7 @@ UI sections:
 ✅ **Query Content**: Loaded C2.in from client machine  
 ✅ **Query Execution**: C2.in executed in 2593ms with 0 results  
 ✅ **Auto-restart**: Cluster restarted automatically after query  
-✅ **Clear Processes**: All java -jar processes killed on 12 nodes (client + master + 10 workers)  
+✅ **Clear Processes**: Killed specific JARs on 12 nodes (client.jar on client, master.jar on master, worker.jar on workers)  
 ✅ **Status Update**: Cluster status correctly shows 'stopped' after clear  
 
 ### Workflow Example
