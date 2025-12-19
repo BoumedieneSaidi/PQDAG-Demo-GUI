@@ -299,10 +299,31 @@ public class QueryService {
         StringBuilder output = new StringBuilder();
         int successCount = 0;
         
+        // Get master IP for comparison
+        String masterIp = null;
+        if (Files.exists(masterFile)) {
+            masterIp = Files.readString(masterFile).trim();
+        }
+        
         for (String node : nodes) {
             try {
                 log.info("Clearing Java processes on node: {}", node);
-                // Kill all java -jar processes (this includes client, master, and workers)
+                
+                // Determine which JAR file to kill based on node type
+                String killCommand;
+                if (node.equals(clientMachineIp)) {
+                    // Client machine: kill client.jar
+                    killCommand = "pkill -9 -f 'client.jar' || true";
+                } else if (node.equals(masterIp)) {
+                    // Master: kill master.jar
+                    killCommand = "pkill -9 -f 'master.jar' || true";
+                } else {
+                    // Workers: kill worker.jar
+                    killCommand = "pkill -9 -f 'worker.jar' || true";
+                }
+                
+                log.info("Executing on {}: {}", node, killCommand);
+                
                 ProcessBuilder pb = new ProcessBuilder(
                     "ssh",
                     "-i", "/tmp/.ssh/pqdag",
@@ -310,7 +331,7 @@ public class QueryService {
                     "-o", "UserKnownHostsFile=/dev/null",
                     "-o", "LogLevel=ERROR",
                     "ubuntu@" + node,
-                    "pkill -9 -f 'java -jar' || true"
+                    killCommand
                 );
                 pb.redirectErrorStream(true);
                 Process process = pb.start();
